@@ -1,7 +1,44 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\GameController;
+use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\RoomController;
 
-Route::get('/', function () {
-    return view('welcome');
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+
+Route::prefix('bakuha')->group(function () {
+    Route::get('/', [
+        PlayerController::class,
+        'initPlayer'
+    ]);
+
+    // Route::get('/', function() {
+    //     return view('title');
+    // });
+
+    Route::get('/room/search', [
+        RoomController::class,
+        'searchRoom'
+    ]);
+
+    Route::get('/game/init', [
+        GameController::class,
+        'initGame'
+    ]);
+
+    Route::get('/game/start', [
+        GameController::class,
+        'startGame'
+    ]);
+
 });
