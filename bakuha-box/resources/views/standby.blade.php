@@ -20,7 +20,7 @@
 
         channel.bind('GameStart', function (data) {
             document.getElementById("match_text").textContent = "Game start!";
-            window.location.href = '/game/start';
+            window.location.href = '/bakuha/game/start';
         });
     </script>
 

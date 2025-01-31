@@ -21,7 +21,7 @@ class RoomController extends Controller
             ]);
 
             event(new PlayerMatched($room));
-            return redirect('/game/init');
+            return redirect('/bakuha/game/init');
         } else if (Room::where('status',0)->exists()) { // 部屋に空きがあれば割り当てて
             $room = Room::where('status',0)->first();
             $room->update([
