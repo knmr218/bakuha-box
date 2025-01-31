@@ -26,18 +26,22 @@ class GameController extends Controller
         $random = rand(0,1);
         if ($random === 1) {
             $player1->update([
+                'cur_turn' => 1,
                 'first' => 1
             ]);
 
             $player2->update([
+                'cur_turn' => 0,
                 'first' => 0
             ]);
         } else {
             $player1->update([
+                'cur_turn' => 0,
                 'first' => 0
             ]);
 
             $player2->update([
+                'cur_turn' => 1,
                 'first' => 1
             ]);
         }
@@ -72,121 +76,127 @@ class GameController extends Controller
         $player1 = Player::find($room->player_1);
         $player2 = Player::find($room->player_2);
         $player = Player::find($playerId);
-        $game = Game::find($room->game_id);
-        $board = $game->board;
-
-        // 操作ターンかどうか確認
-        if ($player->cur_turn === 0) {
-            return response()->json(['board' => $board, 'winner' => 0, 'Invalid' => true]);
+        $another_player = Player::find($room->player_1);
+        if ($another_player->id == $playerId) {
+            $another_player = Player::find($room->player_2);
         }
+        $game = Game::find($room->game_id);
+        $box = $game->box;
+        $cur_point = $player->point;
+        $cur_life = $player->life;
+        $turn_num = $game->turn;
+        $next_phase = 0;
 
-        // バリデーション
-        $request->validate([
-            'row' => 'required|integer|between:0,2',
-            'col' => 'required|integer|between:0,2',
-        ]);
 
-
-        // リクエストで送信された行と列を取得
-        $row = $request->input('row');
-        $col = $request->input('col');
-
-        $coordinate = $row * 3 + $col;
+        // リクエストで送信された箱index
+        $select_num = $request->input('num');
 
         // 入力値の検証
-        if ($board[$coordinate] != "0") {
-            return response()->json(['board' => $board, 'winner' => 0, 'Invalid' => true]);
+        if ($box[$select_num] == "2") {
+            return response()->json(['box' => $box, 'winner' => 0, 'Invalid' => true, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $game->phase]);
         }
 
-        // oxどちらなのか判別
-        $mark = 1;
-        if ($player->first === 0) {
-            $mark = 2;
+        $my_msg = ""; // 相手プレイヤーに選択状況を知らせるメッセージ
+        $another_msg = "";
+        if ($game->phase == 0) {
+            // 爆弾仕掛けフェーズ
+            $box[$select_num] = "1";
+            $next_phase = 1;
+        } else {
+            // 箱開けフェーズ
+            if ($box[$select_num] == "0") {
+                // 爆弾箱じゃない場合
+                $cur_point += ($select_num + 1);
+                $box[$select_num] = "2";
+
+                $box = str_replace('1', '0', $box);
+
+                $my_msg = "相手のプレイヤーは" . $select_num + 1 . "番の箱を開けて、" . $select_num + 1 . "ポイント取得した";
+                $another_msg = "あなたは" . $select_num + 1 . "番の箱を開けて、" . $select_num + 1 . "ポイント取得した";
+            } else {
+                // 爆弾箱の場合
+                $cur_point = 0;
+                $cur_life--;
+
+                $box[$select_num] = "0";
+
+                $my_msg = "相手のプレイヤーは" . $select_num + 1 . "番の箱を開けて、爆弾を引いてしまった";
+                $another_msg = "あなたは" . $select_num + 1 . "番の箱を開けて、爆弾を引いてしまった";
+            }
         }
 
-        // プレイヤーの動き
-        $board[$coordinate] = $mark; // プレイヤーの手は「○」
+        // 勝敗判定
+        if ($cur_point >= 18) {
+            event(new GameEnd($room,$game,$player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの勝ちです", $another_player->id => "あなたの負けです"], $player->id));
+            return response()->json(['box' => $box, 'winner' => 1, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
+        }
 
-        // ボード情報をDBに反映
-        $game->update([
-            'board' => $board
-        ]);
+        if ($cur_life <= 0) {
+            event(new GameEnd($room,$game,$another_player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの負けです", $another_player->id => "あなたの勝ちです"], $player->id));
+            return response()->json(['box' => $box, 'winner' => 2, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
+        }
 
-        History::create([
-            "coordinate" => $coordinate,
-            "mark" => $mark,
-            "game_id" => $game->id,
-            "player_id" => $player->id
-        ]);
+        // 10ターン or 空き箱が一つ
+        if ($turn_num >= 10 || (substr_count($box, "0") <= 1 && substr_count($box, "1") <= 0)) {
+            if ($cur_point > $another_player->point) {
+                event(new GameEnd($room,$game,$player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの勝ちです", $another_player->id => "あなたの負けです"], $player->id));
+                return response()->json(['box' => $box, 'winner' => 1, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
+            } else if ($cur_point < $another_player->point) {
+                event(new GameEnd($room,$game,$another_player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの負けです", $another_player->id => "あなたの勝ちです"], $player->id));
+                return response()->json(['box' => $box, 'winner' => 2, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
+            } else {
+                // 引き分け
+                event(new GameEnd($room,$game,null,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "引き分けです", $another_player->id => "引き分けです"], $player->id));
+                return response()->json(['box' => $box, 'winner' => 3, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
+            }
+        }
 
-        // 勝利判定関数
-        if ($this->checkWinner($mark, $board)) {
+        $turn_num++;
+        if ($game->phase == 0) {
             $game->update([
-                'status' => 1
-            ]);
-            event(new GameEnd($room,$game,$player->id));
-            return response()->json(['board' => $board, 'winner' => 1, 'Invalid' => false]);
-        }
-
-        // 引き分け判定
-        if (strpos($board, '0') === false) {
-            $game->update([
-                'status' => 2
-            ]);
-            event(new GameEnd($room,$game,null));
-            return response()->json(['board' => $board, 'winner' => 2, 'Invalid' => false]);
-        }
-
-        // 待機側のプレイヤーのターンに変更
-        if ($player->id === $player1->id) {
-            $player2->update([
-                'cur_turn' => 1
+                'box' => $box,
+                'phase' => 1
             ]);
         } else {
-            $player1->update([
+            $game->update([
+                'box' => $box,
+                'turn' => $turn_num,
+                'phase' => 0
+            ]);
+
+            // ターンを変更
+            $player->update([
+                'cur_turn' => 0
+            ]);
+            $another_player->update([
                 'cur_turn' => 1
             ]);
+
+            
         }
-        
-        // 現在のプレイヤーは待機ターンへ
+
+        // ポイントとライフをDBに保存
         $player->update([
-            'cur_turn' => 0,
+            'point' => $cur_point,
+            'life' => $cur_life
         ]);
         
-        // 勝者がいない場合は、更新されたボードを返す
-        event(new GameStateUpdate($room, $game));
-        return response()->json(['board' => $board, 'winner' => 0, 'Invalid' => false]);
+        if ($game->phase == 0) {
+            event(new GameStateUpdate($room, $game, $player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "爆弾を仕掛ける箱を選択してください", $another_player->id => "相手が爆弾を仕掛けています"], $game->box));
+        } else {
+            event(new GameStateUpdate($room, $game, $another_player->id,[$player->id => $my_msg, $another_player->id => $another_msg],[$player->id => "相手が箱を開けています", $another_player->id => "開く箱を選択してください"],null));
+        }
+        return response()->json(['box' => $box, 'winner' => 0, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
     }
 
-    // 勝利判定関数
-    private function checkWinner($player, $board) {
-        // 行のチェック
-        for ($i = 0; $i < 3; $i++) {
-            if ($board[$i * 3 + 0] == $player && $board[$i * 3 + 1] == $player && $board[$i * 3 + 2] == $player) {
-                return true;
-            }
-        }
-        // 列のチェック
-        for ($i = 0; $i < 3; $i++) {
-            if ($board[0 * 3 + $i] == $player && $board[1 * 3 + $i] == $player && $board[2 * 3 + $i] == $player) {
-                return true;
-            }
-        }
-        // 対角線のチェック
-        if ($board[0 * 3 + 0] == $player && $board[1 * 3 + 1] == $player && $board[2 * 3 + 2] == $player) {
-            return true;
-        }
-        if ($board[0 * 3 + 2] == $player && $board[1 * 3 + 1] == $player && $board[2 * 3 + 0] == $player) {
-            return true;
-        }
-        return false;
-    }
 
     public function reset($playerId) {
         $player = Player::find($playerId);
         $player->update([
             'cur_turn' => null,
-            'first' => null
+            'first' => null,
+            'point' => 0,
+            'life' => 2,
         ]);
         try {
             $room = Room::where('player_1', '=', $playerId)
@@ -194,8 +204,10 @@ class GameController extends Controller
                         ->first();
             $game = Game::find($room->game_id);
             $game->update([
-                'board' => "000000000",
-                'status' => 0
+                'box' => "00000000",
+                'status' => 0,
+                'turn' => 1,
+                'phase' => 0
             ]);
             $room->update([
                 'status' => 0,
@@ -211,12 +223,12 @@ class GameController extends Controller
     public function endGame(Request $request) {
         $playerId = $request->session()->get('player_id');
         $this->reset($playerId);
-        return redirect('/');
+        return redirect('/bakuha');
     }
 
     public function onemoreGame(Request $request) {
         $playerId = $request->session()->get('player_id');
         $this->reset($playerId);
-        return redirect('/room/search');
+        return redirect('/bakuha/room/search');
     }
 }

@@ -22,10 +22,6 @@ Route::prefix('bakuha')->group(function () {
         'initPlayer'
     ]);
 
-    // Route::get('/', function() {
-    //     return view('title');
-    // });
-
     Route::get('/room/search', [
         RoomController::class,
         'searchRoom'
@@ -41,4 +37,18 @@ Route::prefix('bakuha')->group(function () {
         'startGame'
     ]);
 
+    Route::post('/game/move', [
+        GameController::class,
+        'game'
+    ]);
+
+    Route::get('/game/end', [
+        GameController::class,
+        'endGame'
+    ]);
+    
+    Route::get('/game/onemore', [
+        GameController::class,
+        'onemoreGame'
+    ]);
 });

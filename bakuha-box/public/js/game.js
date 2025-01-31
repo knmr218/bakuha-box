@@ -1,12 +1,12 @@
-function sendMoveToServer(row, col) {
-    // マス目の座標をサーバーに送信
-    fetch('/game/move', {
+function sendMoveToServer(num) {
+    // サーバーに送信
+    fetch('/bakuha/game/move', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: JSON.stringify({ "row": row, "col": col }) // 行と列をサーバーに送信
+        body: JSON.stringify({ "num": num }) // 箱番号をサーバーに送信
     })
     .then(response => response.json()) // サーバーからのレスポンスをJSONで受け取る
     .then(data => {
@@ -16,85 +16,65 @@ function sendMoveToServer(row, col) {
         }
         
         // サーバーから返ってきたデータを使ってクライアント側のボードを更新
-        clientBoard = data.board;
-        updateBoard(clientBoard);
+        clientBox = data.box;
+        updateBox(clientBox);
+
+        document.getElementById('point_text').textContent = data.point;
+        document.getElementById('life_text').textContent = data.life;
         
         if (data.winner !== 0) {
-            if (data.winner === 1) {
-                document.getElementById("game_text").textContent = "あなたの勝ちです";
-            } else if (data.winner === 2) {
-                document.getElementById("game_text").textContent = "引き分けです";
-            }
             disableClick();
-            document.querySelector('.btn_box').style.display = "block";
             return;
         }
-
-        document.getElementById("game_text").textContent = "相手のターン";
-        disableClick();
     })
     .catch(error => {
         console.log('Error:', error);
         alert('エラーが発生しました');
-        window.location.href = '/game/end';
+        window.location.href = '/bakuha/game/end';
     });
 }
 
-function updateBoard(board) {
-    // サーバーから送られたボード状態をもとにクライアントのボードを更新
-    for (let i = 0; i < board.length; i++) {
-        const cell = tableCells[i]; // 対応する<td>要素を取得
-        let content;
-        switch(board[i]) {
-            case "0":
-                content = '';
-                break;
-            case "1":
-                content = '○';
-                break;
-            case "2":
-                content = '×';
-                break;
+function updateBox(box) {
+    // サーバーから送られた状態をもとにクライアントを更新
+    for (let i = 0; i < box.length; i++) {
+        const boxElement = boxes[i]; // 対応する要素を取得
+        if (box[i] === "2") {
+            boxElement.style.color = "gray";
         }
-        cell.textContent = content;
     }
 }
 
 // マスをクリックしたときの処理
-function handleClick(cell) {
-    const row = cell.parentElement.rowIndex; // 行
-    const col = cell.cellIndex % 3; // 列
-
-    if (clientBoard[row * 3 + col] === "0") {
-        clientBoard[row * 3 + col] = "1";
-
+function handleClick(box, index) {
+    if (clientBox[index] !== "2") {
         disableClick();
-        sendMoveToServer(row,col);
+        sendMoveToServer(index);
     } else {
         alert("無効な操作");
     }
 }
 
-const tableCells = document.querySelectorAll('.board td');
-let clientBoard = "000000000";
+const boxes = document.querySelectorAll('.btn');
+let clientBox = "00000000"; // 0:未開封　1:爆弾　2:開封済み
+let phase = 0; // 0:爆弾セット　1:開封の儀
 
-tableCells.forEach(cell => {
-    cell.addEventListener('click', () => {
-        handleClick(cell);
+boxes.forEach((box,index) => {
+    box.addEventListener('click', () => {
+        handleClick(box, index);
     });
 });
 
 // 無効化する関数
 function disableClick() {
-    tableCells.forEach(cell => {
-        cell.style.pointerEvents = "none";
+    boxes.forEach(box => {
+        box.style.pointerEvents = "none";
     });
 }
 
 // 有効化する関数
 function enableClick() {
-    tableCells.forEach(cell => {
-        cell.style.pointerEvents = "auto";
+    boxes.forEach(box => {
+        box.style.pointerEvents = "auto";
     });
 }
 

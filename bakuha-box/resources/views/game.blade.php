@@ -9,7 +9,11 @@ $roomId = $room->id;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>爆破BOX</title>
-    <link rel="stylesheet" href="{{asset('css/game.css')}}">
+    <style>
+        .btn_box {
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <h1 id="game_title">爆破BOX</h1>
@@ -24,9 +28,16 @@ $roomId = $room->id;
     <button type="button" name="Box7" id="btn7" class="btn">Box7</button>
     <button type="button" name="Box8" id="btn8" class="btn">Box8</button>
 
+    <div>
+        <p>point:<span id="point_text">0</span></p>
+        <p>life:<span id="life_text">2</span></p>
+    </div>
+
+    <h3 id="result_msg"></h3>
+
     <div class="btn_box">
-        <button type="button" onclick="window.location.href = '/game/onemore'">もう一度</button>
-        <button type="button" onclick="window.location.href = '/game/end'">やめる</button>
+        <button type="button" onclick="window.location.href = '/bakuha/game/onemore'">もう一度</button>
+        <button type="button" onclick="window.location.href = '/bakuha/game/end'">やめる</button>
     </div>
 
 
@@ -36,10 +47,10 @@ $roomId = $room->id;
         let first = "{{$first}}";
         let playerId = "{{$playerId}}";
         if (first === "1") {
-            document.geteElementById("game_msg").textContent = "相手が爆弾を仕掛けています...";
+            document.getElementById("game_msg").textContent = "相手が爆弾を仕掛けています";
             disableClick();
         } else {
-            document.geteElementById("game_msg").textContent = "爆弾を仕掛ける箱を選択してください";
+            document.getElementById("game_msg").textContent = "爆弾を仕掛ける箱を選択してください";
             enableClick();
         }
 
@@ -53,24 +64,27 @@ $roomId = $room->id;
         var channel = pusher.subscribe('room.{{$roomId}}');
         
         channel.bind('GameStateUpdate', function(data) {
-            document.getElementById("game_text").textContent = "あなたのターン";
-            clientBoard = data.board;
-            updateBoard(clientBoard);
-            enableClick();
+            phase = data.phase;
+            document.getElementById('game_msg').textContent = data.turn_msg[playerId];
+            if (data.selectPlayer === playerId) {
+                enableClick();
+            } else {
+                disableClick();
+            }
+            if (phase == 0) {
+                document.getElementById('result_msg').textContent = data.msg[playerId];
+                clientBox = data.box;
+                updateBox(clientBox);
+            }
         });
 
         channel.bind('GameEnd', function(data) {
-            clientBoard = data.board;
-            updateBoard(clientBoard);
-            enableClick();
-            document.querySelector('.btn_box').style.display = "block";
-            if (data.status === 1) {
-                if (data.winner != playerId) {
-                    document.getElementById("game_text").textContent = "あなたの負けです";
-                }
-            } else if (data.status === 2) {
-                document.getElementById("game_text").textContent = "引き分けです";
-            }
+            clientBox = data.box;
+            updateBox(clientBox);
+            disableClick();
+            document.getElementById("game_msg").textContent = data.res_msg[playerId];
+            document.querySelector(".btn_box").style.display = "block";
+            document.getElementById('result_msg').textContent = data.msg[playerId];
         });
 
     </script>
