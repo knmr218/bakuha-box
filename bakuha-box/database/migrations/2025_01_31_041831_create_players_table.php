@@ -12,7 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('players', function (Blueprint $table) {
-            $table->id();
+            $table->string('id')->primary();
+            $table->integer('cur_turn')->nullable();
+            $table->integer('first')->nullable();
+            $table->integer('point')->default(0);
+            $table->integer('life')->default(3);
             $table->timestamps();
         });
     }

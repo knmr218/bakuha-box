@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('games', function (Blueprint $table) {
-            $table->id();
-            $table->string("box")->default("00000000");
-            $table->integer("status")->default(0);
-            $table->integer("turn")->default(1);
-            $table->timestamps();
+        Schema::table('players', function (Blueprint $table) {
+            $table->integer('life')->default(2)->change();
         });
     }
 
@@ -25,6 +21,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('games');
+        //
     }
 };
