@@ -22,7 +22,7 @@ Route::prefix('bakuha')->group(function () {
         'initPlayer'
     ]);
 
-    Route::get('/room/search', [
+    Route::post('/room/search', [
         RoomController::class,
         'searchRoom'
     ]);

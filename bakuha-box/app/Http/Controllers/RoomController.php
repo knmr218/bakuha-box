@@ -21,14 +21,14 @@ class RoomController extends Controller
             ]);
 
             event(new PlayerMatched($room));
-            return redirect('/bakuha/game/init');
+            return response()->json(['roomId' => $room->id, 'matched' => true]);
         } else if (Room::where('status',0)->exists()) { // 部屋に空きがあれば割り当てて
             $room = Room::where('status',0)->first();
             $room->update([
                 'player_1' => $playerId,
                 'status' => 1
             ]);
-            return view('standby', ['roomId' => $room->id]);
+            return response()->json(['roomId' => $room->id, 'matched' => false]);
         } else {
             // 空きがない場合は待機orエラーで返す
         }

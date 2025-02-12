@@ -3,6 +3,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>standby</title>
+    <style>
+        body {
+            margin: 0;
+            background-image: url('{{ asset('images/panel_title_no_btn.jpg') }}');
+            background-size: cover;
+        }
+
+        #match_text {
+            padding-top: 73vh;
+            margin: 0 auto;
+            text-align: center;
+            width: 26vw;
+            height: 13vh;
+            color: white;
+        }
+    </style>
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
 
