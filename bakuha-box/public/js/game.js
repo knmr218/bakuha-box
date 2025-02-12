@@ -49,9 +49,7 @@ function handleClick(box, index) {
     if (clientBox[index] !== "2") {
         disableClick();
         sendMoveToServer(index);
-    } else {
-        alert("無効な操作");
-    }
+    } 
 }
 
 const boxes = document.querySelectorAll('.btn');
