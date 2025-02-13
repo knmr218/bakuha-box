@@ -117,6 +117,8 @@
                             window.location.href = '/bakuha/game/start';
                         });
 
+                    } else {
+                        alert("満員状態です");
                     }
                 }
             })
