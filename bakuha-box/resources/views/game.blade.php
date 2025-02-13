@@ -144,8 +144,7 @@ $roomId = $room->id;
     <h3 id="result_msg"></h3>
 
     <div class="btn_box">
-        <!-- <button type="button" onclick="window.location.href = '/bakuha/game/onemore'">もう一度</button> -->
-        <button type="button" onclick="window.location.href = '/bakuha/game/end'">やめる</button>
+        <button type="button" onclick="gameEnd()">やめる</button>
     </div>
 
 
@@ -154,12 +153,14 @@ $roomId = $room->id;
     <script>
         let first = "{{$first}}";
         let playerId = "{{$playerId}}";
+
         if (first === "1") {
             document.getElementById("game_msg").textContent = "相手が爆弾を仕掛けています";
             disableClick();
         } else {
             document.getElementById("game_msg").textContent = "爆弾を仕掛ける箱を選択してください";
             enableClick();
+            startCountdown();
         }
 
         // Enable pusher logging - don't include this in production
@@ -176,6 +177,7 @@ $roomId = $room->id;
             document.getElementById('game_msg').textContent = data.turn_msg[playerId];
             if (data.selectPlayer === playerId) {
                 enableClick();
+                startCountdown();
             } else {
                 disableClick();
             }
@@ -198,8 +200,14 @@ $roomId = $room->id;
             updateBox(clientBox);
             disableClick();
             document.getElementById("game_msg").textContent = data.res_msg[playerId];
-            document.querySelector(".btn_box").style.display = "block";
             document.getElementById('result_msg').textContent = data.msg[playerId];
+            gameStatus = 1;
+        });
+
+        channel.bind('GameForceEnd', function(data) {
+            disableClick();
+            document.getElementById("game_msg").textContent = data.res_msg[playerId];
+            gameStatus = 1;
         });
 
 

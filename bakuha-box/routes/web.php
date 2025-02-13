@@ -51,4 +51,9 @@ Route::prefix('bakuha')->group(function () {
         GameController::class,
         'onemoreGame'
     ]);
+
+    Route::get('/game/force_end', [
+        GameController::class,
+        'forceEnd'
+    ]);
 });

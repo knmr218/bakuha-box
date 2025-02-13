@@ -48,13 +48,19 @@ function updateBox(box) {
 function handleClick(box, index) {
     if (clientBox[index] !== "2") {
         disableClick();
+        clearTimeout(countdown);
         sendMoveToServer(index);
     } 
 }
 
 const boxes = document.querySelectorAll('.btn');
 let clientBox = "00000000"; // 0:未開封　1:爆弾　2:開封済み
-let phase = 0; // 0:爆弾セット　1:開封の儀
+let phase = 0; // 0:爆弾セット　1:開封
+let gameStatus = 0; // 0:ゲーム中 1:ゲーム終了
+
+let countdown;
+const remainingTime = 10 * 60 * 1000; // 10分（ミリ秒単位）
+
 
 boxes.forEach((box,index) => {
     box.addEventListener('click', () => {
@@ -76,3 +82,32 @@ function enableClick() {
     });
 }
 
+function gameForceEnd() {
+    fetch('/bakuha/game/force_end', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+    })
+    .then(response => response.json()) // サーバーからのレスポンスをJSONで受け取る
+    .catch(error => {
+        console.log('Error:', error);
+        alert('エラーが発生しました');
+        window.location.href = '/bakuha/game/end';
+    });
+}
+
+function gameEnd() {
+    if (gameStatus === 0) {
+        gameForceEnd();
+    } else {
+        location.href = "/bakuha/game/end";
+    }
+}
+
+function startCountdown() {
+    countdown = setTimeout(() => {
+        gameEnd();
+    }, remainingTime);
+}

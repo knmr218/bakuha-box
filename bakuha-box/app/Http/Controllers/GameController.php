@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\GameEnd;
 use App\Events\GameStart;
 use App\Events\GameStateUpdate;
+use App\Events\GameForceEnd;
 use App\Models\Game;
 use App\Models\History;
 use App\Models\Player;
@@ -230,5 +231,21 @@ class GameController extends Controller
         $playerId = $request->session()->get('player_id');
         $this->reset($playerId);
         return redirect('/bakuha/room/search');
+    }
+
+    public function forceEnd(Request $request) {
+        $playerId = $request->session()->get('player_id');
+        $room = Room::where('player_1', '=', $playerId)
+                    ->orWhere('player_2', '=', $playerId)
+                    ->first();
+        $player1 = Player::find($room->player_1);
+        $player2 = Player::find($room->player_2);
+        $player = Player::find($playerId);
+        $another_player = Player::find($room->player_1);
+        if ($another_player->id == $playerId) {
+            $another_player = Player::find($room->player_2);
+        }
+        event(new GameForceEnd($room, [$player->id => "あなたの負けです", $another_player->id => "あなたの勝ちです"]));
+        return response()->json();
     }
 }
