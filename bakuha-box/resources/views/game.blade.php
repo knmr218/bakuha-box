@@ -10,9 +10,11 @@ $roomId = $room->id;
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>爆破BOX</title>
     <style>
-        /* .btn_box {
-            display: none;
-        } */
+        body {
+            margin: 0;
+            background-image: url('{{ asset('images/dungeon.webp') }}');
+            background-size: cover;
+        }
 
         .btn{
             position: relative;
@@ -26,14 +28,19 @@ $roomId = $room->id;
             padding: 0;
             margin: 5px;
             /* text-align: center; */
-            width: 100px;
-            height: 100px;
+            width: 8vw;
+            height: 8vw;
             overflow: hidden;
             cursor: pointer;
+            transition: transform 0.2s ease;
         }
 
         .close{
             background: url( '{{asset("images/close_takarabako.png")}}' )no-repeat center center / cover;
+        }
+
+        .close:hover{
+            transform: translateY(-10px);
         }
 
         .open{
@@ -57,7 +64,7 @@ $roomId = $room->id;
             width: 100%;
             height: 100%;
             color: #fff;
-            content: "Interact";
+            content: "選ぶ";
             font-size: 22px;
             font-weight: bold;
             display: flex;
@@ -121,15 +128,72 @@ $roomId = $room->id;
         .game_info {
             display: flex;
             justify-content: space-between;
-            padding: 0 10px;
+            padding: 0 3vw;
+            margin-top: 1vh;
+            color: white;
         }
 
         .player_info {
             text-align: center;
+            padding: 10px;
+            margin-top: 3vh;
+            box-sizing: border-box;
+            background-image: url('{{ asset('images/renga.webp') }}');
+            background-size: cover;
+        }
+
+        .player_info h3 {
+            margin: 0;
+            margin-bottom: 10px;
         }
 
         .player_info table td {
             padding: 5px 10px;
+            color: white;
+        }
+
+        .box_container {
+            display: flex;
+            justify-content: center;
+            padding-top: 20vh;
+        }
+
+        .btn_box {
+            display: flex;
+            justify-content: center;
+            padding-top: 20vh;
+        }
+
+        .btn_box button {
+            width: 150px;
+            height: 75px;
+            cursor: pointer;
+            background-image: url('{{ asset('images/renga.webp') }}');
+            background-size: cover;
+            color: white;
+            font-weight: bold;
+            transition: transform 0.2s ease;
+        }
+
+        .btn_box button:hover {
+            transform: translateY(-10px);
+        }
+
+        .game_status_info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            background-image: url('{{ asset('images/renga.webp') }}');
+            background-size: cover;
+            padding: 10px;
+            height: 100px;
+            margin-top: 20px;
+        }
+
+        .game_status_info h2 {
+            margin: 0;
         }
     </style>
 </head>
@@ -149,7 +213,10 @@ $roomId = $room->id;
                 </tr>
             </table>
         </div>
-        <h2 id="turn_info">1ターン　前半</h2>
+        <div class="game_status_info">
+            <h2 id="turn_info">1ターン　前半</h2>
+            <h2 id="game_msg"></h2>
+        </div>
         <div id="enemy_info" class="player_info">
             <h3>ENEMY</h3>
             <table border="1">
@@ -165,49 +232,38 @@ $roomId = $room->id;
         </div>
     </div>
 
-    <h2 id="game_msg"></h2>
-    <!-- <button type="button" name="Box1" id="btn1" class="btn">Box1</button>
-    <button type="button" name="Box2" id="btn2" class="btn">Box2</button>
-    <button type="button" name="Box3" id="btn3" class="btn">Box3</button>
-    <button type="button" name="Box4" id="btn4" class="btn">Box4</button>
-    <button type="button" name="Box5" id="btn5" class="btn">Box5</button>
-    <button type="button" name="Box6" id="btn6" class="btn">Box6</button>
-    <button type="button" name="Box7" id="btn7" class="btn">Box7</button>
-    <button type="button" name="Box8" id="btn8" class="btn">Box8</button> -->
-    <button type="button" name="Box1" id="btn1" class="btn close">
-        <p>1</p>
-    </button>
-    <button type="button" name="Box2" id="btn2" class="btn close">
-        <p>2</p>
-    </button>
-    <button type="button" name="Box3" id="btn3" class="btn close">
-        <p>3</p>
-    </button>
-    <button type="button" name="Box4" id="btn4" class="btn close">
-        <p>4</p>
-    </button>
-    <button type="button" name="Box5" id="btn5" class="btn close">
-        <p>5</p>
-    </button>
-    <button type="button" name="Box6" id="btn6" class="btn close">
-        <p>6</p>
-    </button>
-    <button type="button" name="Box7" id="btn7" class="btn close">
-        <p>7</p>
-    </button>
-    <button type="button" name="Box8" id="btn8" class="btn close">
-        <p>8</p>
-    </button>
+    
+    
+    <div class="box_container">
+        <button type="button" name="Box1" id="btn1" class="btn close">
+            <p>1</p>
+        </button>
+        <button type="button" name="Box2" id="btn2" class="btn close">
+            <p>2</p>
+        </button>
+        <button type="button" name="Box3" id="btn3" class="btn close">
+            <p>3</p>
+        </button>
+        <button type="button" name="Box4" id="btn4" class="btn close">
+            <p>4</p>
+        </button>
+        <button type="button" name="Box5" id="btn5" class="btn close">
+            <p>5</p>
+        </button>
+        <button type="button" name="Box6" id="btn6" class="btn close">
+            <p>6</p>
+        </button>
+        <button type="button" name="Box7" id="btn7" class="btn close">
+            <p>7</p>
+        </button>
+        <button type="button" name="Box8" id="btn8" class="btn close">
+            <p>8</p>
+        </button>
+    </div>
 
-    <!-- <div>
-        <p>point:<span id="point_text">0</span></p>
-        <p>life:<span id="life_text">2</span></p>
-    </div> -->
-
-    <h3 id="result_msg"></h3>
 
     <div class="btn_box">
-        <button type="button" onclick="gameEnd()">やめる</button>
+        <button type="button" onclick="gameEnd()" id="end_btn">リタイアする</button>
     </div>
 
     <div class="label_container">
@@ -324,6 +380,7 @@ $roomId = $room->id;
             disableClick();
             document.getElementById("game_msg").textContent = data.res_msg[playerId];
             gameStatus = 1;
+            document.getElementById('end_btn').textContent = "終了する";
             if (data.safe) {
                 startLabelAnimation("{{ asset('images/safe_point.png') }}");
             } else {
@@ -340,6 +397,7 @@ $roomId = $room->id;
             disableClick();
             document.getElementById("game_msg").textContent = data.res_msg[playerId];
             gameStatus = 1;
+            document.getElementById('end_btn').textContent = "終了する";
             if (data.res_msg[playerId] === "あなたの勝ちです") {
                 startLabelAnimation("{{ asset('images/you_win.png') }}");
             } else {
