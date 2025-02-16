@@ -14,12 +14,12 @@ class GameEnd implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $room, $game, $winner, $msg, $res_msg, $selectPlayer;
+    public $room, $game, $winner, $msg, $res_msg, $selectPlayer, $player_info, $safe;
 
     /**
      * Create a new event instance.
      */
-    public function __construct($room, $game, $winner, $msg, $res_msg, $selectPlayer)
+    public function __construct($room, $game, $winner, $msg, $res_msg, $selectPlayer, $player_info, $safe)
     {
         $this->room = $room;
         $this->game = $game;
@@ -27,6 +27,8 @@ class GameEnd implements ShouldBroadcast
         $this->msg = $msg;
         $this->res_msg = $res_msg;
         $this->selectPlayer = $selectPlayer;
+        $this->player_info = $player_info;
+        $this->safe = $safe;
     }
 
     /**
@@ -53,6 +55,8 @@ class GameEnd implements ShouldBroadcast
             'msg' => $this->msg,
             'res_msg' => $this->res_msg,
             'selectPlayer' => $this->selectPlayer,
+            'player_info' => $this->player_info,
+            'safe' => $this->safe,
         ];
     }
 }

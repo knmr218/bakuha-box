@@ -29,6 +29,7 @@ $roomId = $room->id;
             width: 100px;
             height: 100px;
             overflow: hidden;
+            cursor: pointer;
         }
 
         .close{
@@ -97,10 +98,72 @@ $roomId = $room->id;
             width: 90%;
             font-weight: bold;
         }
+
+        .label_container {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            position: fixed; /* コンテンツ内で絶対配置 */
+            top: 0%; /* 親要素の中央に配置 */
+            left: 0%;
+            /* transform: translate(-40%, -50%); 中心に調整 */
+            margin: 0;
+            z-index: 100000; /* コンテンツより前面に表示 */
+            transition: opacity 0.5s ease;
+        }
+
+        .label_image {
+            width: 80vw;
+        }
+
+        .game_info {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+        }
+
+        .player_info {
+            text-align: center;
+        }
+
+        .player_info table td {
+            padding: 5px 10px;
+        }
     </style>
 </head>
 <body>
-    <h1 id="game_title">爆破BOX</h1>
+    <div class="game_info">
+        <div id="your_info" class="player_info">
+            <h3>YOU</h3>
+            <table border="1">
+                <tr>
+                    <td>POINT</td>
+                    <td id="your_point">0</td>
+                    
+                </tr>
+                <tr>
+                    <td>LIFE</td>
+                    <td id="your_life">2</td>
+                </tr>
+            </table>
+        </div>
+        <h2 id="turn_info">1ターン　前半</h2>
+        <div id="enemy_info" class="player_info">
+            <h3>ENEMY</h3>
+            <table border="1">
+                <tr>
+                    <td>POINT</td>
+                    <td id="enemy_point">0</td>
+                </tr>
+                <tr>
+                    <td>LIFE</td>
+                    <td id="enemy_life">2</td>
+                </tr>
+            </table>
+        </div>
+    </div>
 
     <h2 id="game_msg"></h2>
     <!-- <button type="button" name="Box1" id="btn1" class="btn">Box1</button>
@@ -136,10 +199,10 @@ $roomId = $room->id;
         <p>8</p>
     </button>
 
-    <div>
+    <!-- <div>
         <p>point:<span id="point_text">0</span></p>
         <p>life:<span id="life_text">2</span></p>
-    </div>
+    </div> -->
 
     <h3 id="result_msg"></h3>
 
@@ -147,9 +210,14 @@ $roomId = $room->id;
         <button type="button" onclick="gameEnd()">やめる</button>
     </div>
 
+    <div class="label_container">
+        <img src="" alt="" class="label_image">
+    </div>
+
 
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script src="{{asset('js/game.js')}}"></script>
+    <script src="{{asset('js/anim.js')}}"></script>
     <script>
         let first = "{{$first}}";
         let playerId = "{{$playerId}}";
@@ -157,9 +225,16 @@ $roomId = $room->id;
         if (first === "1") {
             document.getElementById("game_msg").textContent = "相手が爆弾を仕掛けています";
             disableClick();
+            setTimeout(() => {
+                startLabelAnimation("{{ asset('images/enemy_set_turn.png') }}");    
+            }, 1000);
+            
         } else {
             document.getElementById("game_msg").textContent = "爆弾を仕掛ける箱を選択してください";
             enableClick();
+            setTimeout(() => {
+                startLabelAnimation("{{ asset('images/your_set_turn.png') }}");  
+            }, 1000);
             startCountdown();
         }
 
@@ -175,14 +250,25 @@ $roomId = $room->id;
         channel.bind('GameStateUpdate', function(data) {
             phase = data.phase;
             document.getElementById('game_msg').textContent = data.turn_msg[playerId];
+            let labelPath;
             if (data.selectPlayer === playerId) {
+                if (phase == 0) {
+                    labelPath = "{{ asset('images/your_set_turn.png') }}";
+                } else {
+                    labelPath = "{{ asset('images/your_open_turn.png') }}";
+                }
                 enableClick();
                 startCountdown();
             } else {
+                if (phase == 0) {
+                    labelPath = "{{ asset('images/enemy_set_turn.png') }}";
+                } else {
+                    labelPath = "{{ asset('images/enemy_open_turn.png') }}";
+                }
                 disableClick();
             }
+            
             if (phase == 0) {
-                document.getElementById('result_msg').textContent = data.msg[playerId];
                 clientBox = data.box;
                 const btns = document.querySelectorAll(".btn");
                 for(let i = 0; i < 8; i++){
@@ -192,22 +278,73 @@ $roomId = $room->id;
                     }
                 }
                 updateBox(clientBox);
+                document.getElementById("turn_info").textContent = data.turn_num;
+                
+                document.getElementById("your_point").textContent = data.player_info[playerId][0];
+                document.getElementById("your_life").textContent = data.player_info[playerId][1];
+
+                // すべてのキーを取得
+                let keys = Object.keys(data.player_info);
+                // 自分以外のキーを取得
+                let enemyKey = keys.find(key => key !== playerId);
+                // もう片方の情報を取得
+                let enemyValue = data.player_info[enemyKey];
+
+                document.getElementById("enemy_point").textContent = enemyValue[0];
+                document.getElementById("enemy_life").textContent = enemyValue[1];
+                
+                if (data.msg[playerId]) {
+                    startLabelAnimation("{{ asset('images/safe_point.png') }}");
+                } else {
+                    startLabelAnimation("{{ asset('images/bomb_0point_life-1.png') }}");
+                }
+                
             }
+
+            startLabelAnimation(labelPath);
         });
 
         channel.bind('GameEnd', function(data) {
             clientBox = data.box;
+            document.getElementById("turn_info").textContent = data.turn_num;
+                
+            document.getElementById("your_point").textContent = data.player_info[playerId][0];
+            document.getElementById("your_life").textContent = data.player_info[playerId][1];
+
+            // すべてのキーを取得
+            let keys = Object.keys(data.player_info);
+            // 自分以外のキーを取得
+            let enemyKey = keys.find(key => key !== playerId);
+            // もう片方の情報を取得
+            let enemyValue = data.player_info[enemyKey];
+
+            document.getElementById("enemy_point").textContent = enemyValue[0];
+            document.getElementById("enemy_life").textContent = enemyValue[1];
             updateBox(clientBox);
             disableClick();
             document.getElementById("game_msg").textContent = data.res_msg[playerId];
-            document.getElementById('result_msg').textContent = data.msg[playerId];
             gameStatus = 1;
+            if (data.safe) {
+                startLabelAnimation("{{ asset('images/safe_point.png') }}");
+            } else {
+                startLabelAnimation("{{ asset('images/bomb_0point_life-1.png') }}");
+            }
+            if (data.res_msg[playerId] === "あなたの勝ちです") {
+                startLabelAnimation("{{ asset('images/you_win.png') }}");
+            } else {
+                startLabelAnimation("{{ asset('images/you_lose.png') }}");
+            }
         });
 
         channel.bind('GameForceEnd', function(data) {
             disableClick();
             document.getElementById("game_msg").textContent = data.res_msg[playerId];
             gameStatus = 1;
+            if (data.res_msg[playerId] === "あなたの勝ちです") {
+                startLabelAnimation("{{ asset('images/you_win.png') }}");
+            } else {
+                startLabelAnimation("{{ asset('images/you_lose.png') }}");
+            }
         });
 
 

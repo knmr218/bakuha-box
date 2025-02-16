@@ -112,8 +112,10 @@ class GameController extends Controller
 
                 $box = str_replace('1', '0', $box);
 
-                $my_msg = "相手のプレイヤーは" . $select_num + 1 . "番の箱を開けて、" . $select_num + 1 . "ポイント取得した";
-                $another_msg = "あなたは" . $select_num + 1 . "番の箱を開けて、" . $select_num + 1 . "ポイント取得した";
+                // $my_msg = "相手のプレイヤーは" . $select_num + 1 . "番の箱を開けて、" . $select_num + 1 . "ポイント取得した";
+                // $another_msg = "あなたは" . $select_num + 1 . "番の箱を開けて、" . $select_num + 1 . "ポイント取得した";
+                $my_msg = true;
+                $another_msg = true;
             } else {
                 // 爆弾箱の場合
                 $cur_point = 0;
@@ -121,33 +123,35 @@ class GameController extends Controller
 
                 $box[$select_num] = "0";
 
-                $my_msg = "相手のプレイヤーは" . $select_num + 1 . "番の箱を開けて、爆弾を引いてしまった";
-                $another_msg = "あなたは" . $select_num + 1 . "番の箱を開けて、爆弾を引いてしまった";
+                // $my_msg = "相手のプレイヤーは" . $select_num + 1 . "番の箱を開けて、爆弾を引いてしまった";
+                // $another_msg = "あなたは" . $select_num + 1 . "番の箱を開けて、爆弾を引いてしまった";
+                $my_msg = false;
+                $another_msg = false;
             }
         }
 
         // 勝敗判定
         if ($cur_point >= 18) {
-            event(new GameEnd($room,$game,$player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの勝ちです", $another_player->id => "あなたの負けです"], $player->id));
+            event(new GameEnd($room,$game,$player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの勝ちです", $another_player->id => "あなたの負けです"], $player->id, [$player->id => [$cur_point, $cur_life], $another_player->id => [$another_player->point, $another_player->life]], $my_msg));
             return response()->json(['box' => $box, 'winner' => 1, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
         }
 
         if ($cur_life <= 0) {
-            event(new GameEnd($room,$game,$another_player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの負けです", $another_player->id => "あなたの勝ちです"], $player->id));
+            event(new GameEnd($room,$game,$another_player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの負けです", $another_player->id => "あなたの勝ちです"], $player->id, [$player->id => [$cur_point, $cur_life], $another_player->id => [$another_player->point, $another_player->life]], $my_msg));
             return response()->json(['box' => $box, 'winner' => 2, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
         }
 
         // 10ターン or 空き箱が一つ
         if ($turn_num >= 10 || (substr_count($box, "0") <= 1 && substr_count($box, "1") <= 0)) {
             if ($cur_point > $another_player->point) {
-                event(new GameEnd($room,$game,$player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの勝ちです", $another_player->id => "あなたの負けです"], $player->id));
+                event(new GameEnd($room,$game,$player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの勝ちです", $another_player->id => "あなたの負けです"], $player->id, [$player->id => [$cur_point, $cur_life], $another_player->id => [$another_player->point, $another_player->life]], $my_msg));
                 return response()->json(['box' => $box, 'winner' => 1, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
             } else if ($cur_point < $another_player->point) {
-                event(new GameEnd($room,$game,$another_player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの負けです", $another_player->id => "あなたの勝ちです"], $player->id));
+                event(new GameEnd($room,$game,$another_player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "あなたの負けです", $another_player->id => "あなたの勝ちです"], $player->id, [$player->id => [$cur_point, $cur_life], $another_player->id => [$another_player->point, $another_player->life]], $my_msg));
                 return response()->json(['box' => $box, 'winner' => 2, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
             } else {
                 // 引き分け
-                event(new GameEnd($room,$game,null,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "引き分けです", $another_player->id => "引き分けです"], $player->id));
+                event(new GameEnd($room,$game,null,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "引き分けです", $another_player->id => "引き分けです"], $player->id, [$player->id => [$cur_point, $cur_life], $another_player->id => [$another_player->point, $another_player->life]], $my_msg));
                 return response()->json(['box' => $box, 'winner' => 3, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
             }
         }
@@ -181,11 +185,18 @@ class GameController extends Controller
             'point' => $cur_point,
             'life' => $cur_life
         ]);
+
+        $turn_num_text = ceil($game->turn / 2) . "ターン　";
+        if ($game->turn % 2 == 0) {
+            $turn_num_text = $turn_num_text . "後半";
+        } else {
+            $turn_num_text = $turn_num_text . "前半";
+        }
         
         if ($game->phase == 0) {
-            event(new GameStateUpdate($room, $game, $player->id,[$player->id => $another_msg, $another_player->id => $my_msg],[$player->id => "爆弾を仕掛ける箱を選択してください", $another_player->id => "相手が爆弾を仕掛けています"], $game->box));
+            event(new GameStateUpdate($room, $game, $player->id,[$player->id => $my_msg, $another_player->id => $another_msg],[$player->id => "爆弾を仕掛ける箱を選択してください", $another_player->id => "相手が爆弾を仕掛けています"], $game->box, [$player->id => [$player->point, $player->life], $another_player->id => [$another_player->point, $another_player->life]], $turn_num_text));
         } else {
-            event(new GameStateUpdate($room, $game, $another_player->id,[$player->id => $my_msg, $another_player->id => $another_msg],[$player->id => "相手が箱を開けています", $another_player->id => "開く箱を選択してください"],null));
+            event(new GameStateUpdate($room, $game, $another_player->id,[$player->id => $my_msg, $another_player->id => $another_msg],[$player->id => "相手が箱を開けています", $another_player->id => "開く箱を選択してください"],null, [$player->id => [$player->point, $player->life], $another_player->id => [$another_player->point, $another_player->life]], $turn_num_text));
         }
         return response()->json(['box' => $box, 'winner' => 0, 'Invalid' => false, 'point' => $cur_point, 'life' => $cur_life, 'phase' => $next_phase]);
     }

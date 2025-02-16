@@ -19,8 +19,8 @@ function sendMoveToServer(num) {
         clientBox = data.box;
         updateBox(clientBox);
 
-        document.getElementById('point_text').textContent = data.point;
-        document.getElementById('life_text').textContent = data.life;
+        // document.getElementById('point_text').textContent = data.point;
+        // document.getElementById('life_text').textContent = data.life;
         
         if (data.winner !== 0) {
             disableClick();
@@ -30,7 +30,7 @@ function sendMoveToServer(num) {
     .catch(error => {
         console.log('Error:', error);
         alert('エラーが発生しました');
-        window.location.href = '/bakuha/game/end';
+        // window.location.href = '/bakuha/game/end';
     });
 }
 
