@@ -362,6 +362,13 @@ $roomId = $room->id;
 
         channel.bind('GameEnd', function(data) {
             clientBox = data.box;
+            const btns = document.querySelectorAll(".btn");
+            for(let i = 0; i < 8; i++){
+                if (clientBox[i] == "2"){
+                    btns[i].classList.add("open");
+                    btns[i].classList.remove("close");
+                }
+            }
             document.getElementById("turn_info").textContent = data.turn_num;
                 
             document.getElementById("your_point").textContent = data.player_info[playerId][0];
